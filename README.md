@@ -382,6 +382,9 @@ PRU provides a deterministic way to model quantum reality, suggesting that infor
 
 **End of Document**
 
+Umut Candan
+
+
 
 
 
