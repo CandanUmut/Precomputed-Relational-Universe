@@ -1,0 +1,539 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from scipy.sparse import lil_matrix
+from scipy.spatial import cKDTree
+import requests
+from bs4 import BeautifulSoup
+import spacy
+from numba import njit, prange
+
+# ================================
+# 🔥 PRU-AI: Scalable, NLP-Integrated, Relational Knowledge System
+# ================================
+
+class PRU_AI:
+    def __init__(self, max_entities=1000000):
+        """Initialize PRU-AI with a scalable matrix-based knowledge graph."""
+        self.max_entities = max_entities
+        self.entity_index = {}
+        self.index_entity = {}
+        self.next_index = 0
+        self.relation_matrix = lil_matrix((max_entities, max_entities), dtype=np.float64)
+
+        # Load NLP Model (spaCy); auto-download if missing.
+        try:
+            self.nlp = spacy.load("en_core_web_sm")
+        except OSError:
+            from spacy.cli import download
+            download("en_core_web_sm")
+            self.nlp = spacy.load("en_core_web_sm")
+
+    def add_entity(self, entity):
+        """Adds a new entity if it doesn't exist."""
+        if entity not in self.entity_index:
+            if self.next_index >= self.max_entities:
+                raise ValueError("Max entity limit reached!")
+            self.entity_index[entity] = self.next_index
+            self.index_entity[self.next_index] = entity
+            self.next_index += 1
+
+    def add_relation(self, entity1, relation_strength, entity2):
+        """Adds a weighted relation between two entities."""
+        self.add_entity(entity1)
+        self.add_entity(entity2)
+        i, j = self.entity_index[entity1], self.entity_index[entity2]
+        self.relation_matrix[i, j] = relation_strength
+        self.relation_matrix[j, i] = relation_strength
+
+    def infer_new_relations(self):
+        """
+        Dynamically generates new knowledge by finding hidden patterns using
+        sparse matrix multiplication to infer neighbors-of-neighbors.
+        """
+        csr = self.relation_matrix.tocsr()
+        inferred_matrix = csr * csr
+        inferred_matrix = inferred_matrix.tocoo()
+
+        new_relations = []
+        for i, j, value in zip(inferred_matrix.row, inferred_matrix.col, inferred_matrix.data):
+            if i != j and self.relation_matrix[i, j] == 0:
+                entity1 = self.index_entity[i]
+                entity2 = self.index_entity[j]
+                new_relations.append((entity1, "related to", entity2))
+                self.add_relation(entity1, 0.5, entity2)
+        return new_relations
+
+    def query_knowledge(self, entity):
+        """Returns all relations for a given entity."""
+        if entity in self.entity_index:
+            i = self.entity_index[entity]
+            related_indices = np.nonzero(self.relation_matrix[i, :])[1]
+            return [(entity, self.index_entity[idx], self.relation_matrix[i, idx]) for idx in related_indices]
+        return []
+
+    def fetch_wikipedia_summary(self, topic):
+        """
+        Fetches Wikipedia summary and extracts relational knowledge.
+        Uses dependency parsing and NER while filtering stop words.
+        """
+        url = f"https://en.wikipedia.org/wiki/{topic.replace(' ', '_')}"
+        headers = {"User-Agent": "Mozilla/5.0"}
+        response = requests.get(url, headers=headers)
+        if response.status_code != 200:
+            return "Wikipedia page not found."
+
+        soup = BeautifulSoup(response.text, "html.parser")
+        paragraphs = soup.find_all("p")
+        text = " ".join([p.get_text() for p in paragraphs[:3]])
+
+        doc = self.nlp(text)
+        for token in doc:
+            if token.is_stop or not token.text.strip():
+                continue
+            if token.dep_ in ("nsubj", "dobj", "pobj"):
+                for child in token.children:
+                    if child.dep_ in ("prep", "acl") and not child.is_stop:
+                        self.add_relation(token.text, 1.0, child.text)
+        entities = [ent for ent in doc.ents if not ent.text.lower() in self.nlp.Defaults.stop_words and len(ent.text) > 1]
+        for i in range(len(entities)):
+            for j in range(i + 1, len(entities)):
+                self.add_relation(entities[i].text, 0.7, entities[j].text)
+
+        return f"Extracted relational knowledge from Wikipedia: {topic}"
+
+    def print_matrix(self):
+        """Prints the relational matrix for active entities."""
+        active_size = self.next_index
+        df = pd.DataFrame(
+            self.relation_matrix[:active_size, :active_size].toarray(),
+            index=[self.index_entity[i] for i in range(active_size)],
+            columns=[self.index_entity[i] for i in range(active_size)]
+        )
+        print(df)
+
+
+# ================================
+# PRU Simulation: Precomputed Cosmological & Quantum-Relational Updates
+# ================================
+
+class PRU_Simulation:
+    def __init__(self, num_particles=100000, time_steps=1200, delta_t=0.01):
+        self.NUM_PARTICLES_COSMO = num_particles
+        self.TIME_STEPS = time_steps
+        self.DELTA_T = delta_t
+
+        # Physical Constants
+        self.G = 6.67430e-11
+        self.K_E = 8.9875517873681764e9
+        self.C_LIGHT = 3e8
+        self.HEAT_TRANSFER_COEFF = 0.01
+
+        # Particle properties
+        self.PARTICLE_TYPES = ["Electron", "Proton", "Neutron", "Atom", "Molecule", "Star", "Dark Matter"]
+        self.CHARGES = {"Electron": -1.6e-19, "Proton": 1.6e-19, "Neutron": 0.0, "Atom": 0.0,
+                        "Molecule": 0.0, "Star": 0.0, "Dark Matter": 0.0}
+        self.MASSES = {"Electron": 9.11e-31, "Proton": 1.67e-27, "Neutron": 1.67e-27, "Atom": 4.0e-26,
+                       "Molecule": 5.0e-26, "Star": 1.989e30, "Dark Matter": 1e-25}
+
+        self.setup_particles()
+        # For agent simulation: randomly designate a small number of particles as agents.
+        num_agents = 10
+        self.agent_indices = np.random.choice(np.arange(self.NUM_PARTICLES_COSMO), num_agents, replace=False)
+
+        # Histories for analysis
+        self.temperature_history = []
+        self.entropy_history = []
+        self.phase_history = []
+        self.velocity_history = []
+        self.quantum_state_history = []
+        self.min_temperature_history = []
+        self.max_temperature_history = []
+        self.results = {}
+
+    def setup_particles(self):
+        particle_dtype = np.dtype([
+            ('charge', np.float64),
+            ('mass', np.float64),
+            ('position', np.float64, (2,)),
+            ('velocity', np.float64, (2,)),
+            ('temperature', np.float64),
+            ('entropy', np.float64),
+            ('phase', np.int32),
+            ('quantum_state', np.float64),
+            ('entanglement_id', np.int32)
+        ])
+        np.random.seed(42)
+        self.particles = np.zeros(self.NUM_PARTICLES_COSMO, dtype=particle_dtype)
+        particle_types_list = np.random.choice(self.PARTICLE_TYPES, self.NUM_PARTICLES_COSMO)
+        for i in range(self.NUM_PARTICLES_COSMO):
+            p_type = particle_types_list[i]
+            self.particles[i] = (
+                self.CHARGES[p_type],
+                self.MASSES[p_type],
+                np.random.rand(2) * 1e6 - 5e5,
+                np.random.randn(2) * 1e4,
+                np.random.uniform(100, 5000),
+                0.0,
+                0,
+                np.random.rand(),
+                np.random.randint(0, 10)
+            )
+
+    def run_simulation(self):
+        for step in range(self.TIME_STEPS):
+            forces = compute_forces_kdtree(self.particles, self.G, self.K_E, self.C_LIGHT)
+            temperatures, entropy = compute_heat_transfer(self.particles, self.HEAT_TRANSFER_COEFF, self.DELTA_T)
+            self.particles['temperature'] = temperatures
+            self.particles['entropy'] = entropy
+
+            update_positions(self.particles, forces, self.DELTA_T, self.C_LIGHT)
+            update_phases(self.particles)
+            update_quantum_states(self.particles)
+
+            avg_temp = self.particles['temperature'].mean()
+            avg_entropy = self.particles['entropy'].mean()
+            avg_velocity = np.mean(np.sqrt(self.particles['velocity'][:,0]**2 + self.particles['velocity'][:,1]**2))
+            avg_phase = self.particles['phase'].mean()
+            avg_quantum = self.particles['quantum_state'].mean()
+            min_temp = np.min(self.particles['temperature'])
+            max_temp = np.max(self.particles['temperature'])
+
+            self.temperature_history.append(avg_temp)
+            self.entropy_history.append(avg_entropy)
+            self.phase_history.append(avg_phase)
+            self.velocity_history.append(avg_velocity)
+            self.quantum_state_history.append(avg_quantum)
+            self.min_temperature_history.append(min_temp)
+            self.max_temperature_history.append(max_temp)
+
+            if step % 10 == 0:
+                print(f"Step {step}/{self.TIME_STEPS} - Avg Temp: {avg_temp:.2f} K, Min Temp: {min_temp:.2f} K, Max Temp: {max_temp:.2f} K, "
+                      f"Avg Entropy: {avg_entropy:.6f} J/K, Avg Velocity: {avg_velocity:.2f} m/s, Avg Phase: {avg_phase:.2f}, "
+                      f"Avg Quantum State: {avg_quantum:.4f}")
+
+        self.results = {
+            "time_steps": self.TIME_STEPS,
+            "avg_temperature": self.temperature_history,
+            "min_temperature": self.min_temperature_history,
+            "max_temperature": self.max_temperature_history,
+            "avg_entropy": self.entropy_history,
+            "avg_phase": self.phase_history,
+            "avg_velocity": self.velocity_history,
+            "avg_quantum_state": self.quantum_state_history
+        }
+
+    def get_summary(self):
+        """Returns a summary of the simulation's final state."""
+        if not self.results:
+            return "Simulation has not been run yet."
+        summary = f"Simulation Summary:\nTime Steps: {self.results['time_steps']}\n"
+        summary += f"Final Avg Temperature: {self.results['avg_temperature'][-1]:.2f} K\n"
+        summary += f"Final Avg Entropy: {self.results['avg_entropy'][-1]:.6f} J/K\n"
+        summary += f"Final Avg Velocity: {self.results['avg_velocity'][-1]:.2f} m/s\n"
+        summary += f"Final Avg Quantum State: {self.results['avg_quantum_state'][-1]:.4f}\n"
+        return summary
+
+
+# ================================
+# Simulation Helper Functions (Modified to Accept Parameters)
+# ================================
+
+def compute_forces_kdtree(particles, G, K_E, C_LIGHT):
+    num_p = len(particles)
+    forces = np.zeros((num_p, 2))
+    positions = particles['position']
+    tree = cKDTree(positions)
+    cutoff = 1e4
+    for i in range(num_p):
+        pos_i = positions[i]
+        neighbors = tree.query_ball_point(pos_i, cutoff)
+        if i in neighbors:
+            neighbors.remove(i)
+        for j in neighbors:
+            r_vec = positions[j] - pos_i
+            distance = np.sqrt(r_vec[0]**2 + r_vec[1]**2 + 1e3**2)
+            F_g = (G * particles[i]['mass'] * particles[j]['mass']) / (distance**2)
+            F_e = (K_E * particles[i]['charge'] * particles[j]['charge']) / (distance**2)
+            v_norm = np.sqrt(particles[i]['velocity'][0]**2 + particles[i]['velocity'][1]**2)
+            v_rel = v_norm / C_LIGHT
+            gamma = 1.0 / np.sqrt(1 - 0.999**2) if v_rel >= 0.999 else 1.0 / np.sqrt(1 - v_rel**2)
+            force_magnitude = (F_g + F_e) * gamma
+            forces[i, 0] += force_magnitude * (r_vec[0] / distance)
+            forces[i, 1] += force_magnitude * (r_vec[1] / distance)
+    return forces
+
+@njit(parallel=True)
+def compute_heat_transfer(particles, HEAT_TRANSFER_COEFF, DELTA_T):
+    num_p = len(particles)
+    new_temps = particles['temperature'].copy()
+    new_entropy = particles['entropy'].copy()
+    norm_factor = 1000.0
+    for i in prange(num_p):
+        for j in range(num_p):
+            if i != j:
+                Q_ij = HEAT_TRANSFER_COEFF * (particles[j]['temperature'] - particles[i]['temperature'])
+                new_temps[i] += (Q_ij * DELTA_T) / norm_factor
+                if new_temps[i] > 0:
+                    new_entropy[i] += ((Q_ij / new_temps[i]) * DELTA_T) / norm_factor
+    return new_temps, new_entropy
+
+@njit(parallel=True)
+def update_positions(particles, forces, DELTA_T, C_LIGHT):
+    for i in prange(len(particles)):
+        particles[i]['velocity'][0] += forces[i, 0] * DELTA_T / particles[i]['mass']
+        particles[i]['velocity'][1] += forces[i, 1] * DELTA_T / particles[i]['mass']
+        v_norm = np.sqrt(particles[i]['velocity'][0]**2 + particles[i]['velocity'][1]**2)
+        if v_norm > 0.99 * C_LIGHT:
+            scale = (0.99 * C_LIGHT) / v_norm
+            particles[i]['velocity'][0] *= scale
+            particles[i]['velocity'][1] *= scale
+        particles[i]['position'][0] += particles[i]['velocity'][0] * DELTA_T
+        particles[i]['position'][1] += particles[i]['velocity'][1] * DELTA_T
+
+@njit(parallel=True)
+def update_phases(particles):
+    for i in prange(len(particles)):
+        temp = particles[i]['temperature']
+        if temp < 500:
+            particles[i]['phase'] = 0
+        elif temp < 2500:
+            particles[i]['phase'] = 1
+        else:
+            particles[i]['phase'] = 2
+
+@njit(parallel=True)
+def update_quantum_states(particles):
+    unique_ids = np.unique(particles['entanglement_id'])
+    for eid in unique_ids:
+        indices = np.where(particles['entanglement_id'] == eid)[0]
+        avg_state = particles['quantum_state'][indices].mean()
+        particles['quantum_state'][indices] = avg_state
+
+
+# ================================
+# PRU Agent: An Intelligent Entity Living in the Simulation
+# ================================
+
+class PRU_Agent:
+    def __init__(self, agent_id, particle_index, name, simulation, knowledge_system):
+        self.agent_id = agent_id
+        self.particle_index = particle_index  # Index into the simulation particles
+        self.name = name
+        self.simulation = simulation
+        self.knowledge_system = knowledge_system
+        self.interactions = []  # Log of interactions
+
+        # Add self to the knowledge graph
+        self.knowledge_system.add_relation(self.name, 1.0, "Agent")
+
+    def get_position(self):
+        return self.simulation.particles[self.particle_index]['position']
+
+    def sense_environment(self, radius=1e4):
+        """Sense local simulation data (e.g., average temperature) around the agent."""
+        pos = self.get_position()
+        positions = self.simulation.particles['position']
+        tree = cKDTree(positions)
+        neighbors = tree.query_ball_point(pos, radius)
+        temps = self.simulation.particles['temperature'][neighbors]
+        avg_temp = temps.mean() if len(temps) > 0 else None
+        return avg_temp, len(neighbors)
+
+    def interact_with(self, other_agent):
+        """Simulate an interaction with another agent and update the knowledge graph."""
+        interaction_str = f"{self.name} communicated with {other_agent.name}"
+        self.interactions.append(interaction_str)
+        self.knowledge_system.add_relation(self.name, 1.0, other_agent.name)
+        return interaction_str
+
+    def report(self):
+        """Return a report of the agent's interactions and sensed data."""
+        avg_temp, neighbor_count = self.sense_environment()
+        report_str = f"Agent {self.name} at particle {self.particle_index}: sensed avg temp {avg_temp:.2f} K with {neighbor_count} nearby particles. "
+        if self.interactions:
+            report_str += "Interactions: " + "; ".join(self.interactions)
+        else:
+            report_str += "No interactions recorded."
+        return report_str
+
+
+# ================================
+# Dialogue Manager: NLU, Dialogue Handling & NLG (with Simulation & Agent Queries)
+# ================================
+
+class DialogueManager:
+    def __init__(self, pru_ai, simulation, agents):
+        self.pru_ai = pru_ai
+        self.simulation = simulation
+        self.agents = agents  # List of PRU_Agent objects
+        self.context = {}
+        self.nlp = pru_ai.nlp
+
+    def interpret_input(self, user_input):
+        text_lower = user_input.lower()
+
+        # Intent: Query simulation status
+        if any(word in text_lower for word in ["simulation", "cosmos", "universe"]):
+            return {"intent": "query_simulation"}
+
+        # Intent: Query agent report
+        if "agent report" in text_lower or "agents report" in text_lower:
+            return {"intent": "agent_report"}
+
+        # Intent: Trigger agent interactions (e.g., "agents interact", "simulate agent communication")
+        if any(phrase in text_lower for phrase in ["agents interact", "agent interaction", "communicate agents"]):
+            return {"intent": "agent_interaction"}
+
+        # Intent: Update/learn new knowledge
+        if any(phrase in text_lower for phrase in ["learn that", "update knowledge", "add info"]):
+            content = user_input.lower().replace("learn that", "").replace("update knowledge", "").replace("add info", "").strip()
+            doc_content = self.nlp(content)
+            ents = list(doc_content.ents)
+            if len(ents) >= 2:
+                subject = ents[0].text
+                object_ = ents[1].text
+                relation = "related to"
+                return {"intent": "update_info", "subject": subject, "object": object_, "relation": relation, "weight": 1.0}
+            else:
+                nouns = [token.text for token in doc_content if token.pos_ == "NOUN"]
+                if len(nouns) >= 2:
+                    subject = nouns[0]
+                    object_ = nouns[1]
+                    relation = "related to"
+                    return {"intent": "update_info", "subject": subject, "object": object_, "relation": relation, "weight": 1.0}
+                else:
+                    return {"intent": "unknown", "message": "I couldn't extract entities to update. Please use a format like 'learn that [subject] is related to [object]'."}
+
+        # Intent: Fetch information
+        if any(phrase in text_lower for phrase in ["tell me about", "what is", "who is", "explain", "define"]):
+            doc = self.nlp(user_input)
+            if doc.ents:
+                topic = doc.ents[0].text
+            else:
+                nouns = [token.text for token in doc if token.pos_ == "NOUN"]
+                topic = nouns[-1] if nouns else user_input
+            return {"intent": "fetch_info", "topic": topic}
+
+        # Intent: Query relations
+        if "relation" in text_lower or "related" in text_lower or "connect" in text_lower:
+            doc = self.nlp(user_input)
+            if doc.ents:
+                entity = doc.ents[0].text
+            else:
+                tokens = user_input.split()
+                entity = tokens[-1]
+            return {"intent": "query_relation", "entity": entity}
+
+        return {"intent": "unknown", "message": "I didn't understand that. Can you rephrase?"}
+
+    def generate_response(self, result):
+        if isinstance(result, list):
+            if not result:
+                return "I couldn't find any related information."
+            response_lines = []
+            for rel in result:
+                response_lines.append(f"{rel[0]} is related to {rel[1]} (strength: {rel[2]:.2f})")
+            return "Here are some relations I found:\n" + "\n".join(response_lines)
+        elif isinstance(result, str):
+            return result
+        else:
+            return "Here is the information I found: " + str(result)
+
+    def handle_input(self, user_input):
+        interpretation = self.interpret_input(user_input)
+        intent = interpretation.get("intent")
+        if intent == "fetch_info":
+            topic = interpretation.get("topic")
+            wiki_result = self.pru_ai.fetch_wikipedia_summary(topic)
+            relations = self.pru_ai.query_knowledge(topic)
+            response = wiki_result + "\n" + self.generate_response(relations)
+            return response
+        elif intent == "query_relation":
+            entity = interpretation.get("entity")
+            relations = self.pru_ai.query_knowledge(entity)
+            return self.generate_response(relations)
+        elif intent == "update_info":
+            subject = interpretation.get("subject")
+            object_ = interpretation.get("object")
+            relation = interpretation.get("relation")
+            weight = interpretation.get("weight", 1.0)
+            self.pru_ai.add_relation(subject, weight, object_)
+            new_relations = self.pru_ai.infer_new_relations()
+            response = f"Updated knowledge: {subject} is now {relation} {object_}.\n"
+            if new_relations:
+                inferred = ", ".join([f"{r[0]} related to {r[2]}" for r in new_relations])
+                response += "New inferred relations: " + inferred
+            return response
+        elif intent == "query_simulation":
+            return self.simulation.get_summary()
+        elif intent == "agent_interaction":
+            # For simplicity, simulate pairwise interactions among agents that are close.
+            positions = np.array([agent.get_position() for agent in self.agents])
+            tree = cKDTree(positions)
+            interactions = []
+            for i, agent in enumerate(self.agents):
+                neighbors = tree.query_ball_point(agent.get_position(), r=1e4)
+                for j in neighbors:
+                    if i != j:
+                        inter_str = agent.interact_with(self.agents[j])
+                        interactions.append(inter_str)
+            if interactions:
+                return "Agent interactions performed:\n" + "\n".join(interactions)
+            else:
+                return "No agents were close enough to interact."
+        elif intent == "agent_report":
+            reports = [agent.report() for agent in self.agents]
+            return "Agent Reports:\n" + "\n".join(reports)
+        else:
+            return interpretation.get("message", "I didn't understand that.")
+
+    def run(self):
+        print("Welcome to the Unified PRU Conversational System!")
+        print("Type 'exit' to quit.")
+        while True:
+            user_input = input("You: ")
+            if user_input.lower() in ["exit", "quit"]:
+                print("Goodbye!")
+                break
+            response = self.handle_input(user_input)
+            print("PRU-AI: " + response)
+
+
+# ================================
+# Main: Merge PRU_AI, PRU Simulation & Agents
+# ================================
+
+if __name__ == "__main__":
+    # Initialize the knowledge system
+    pru_ai = PRU_AI(max_entities=100000)
+    pru_ai.add_relation("Humans", 1.0, "Technology")
+    pru_ai.add_relation("Technology", 1.0, "Machines")
+    pru_ai.add_relation("Machines", 1.0, "Rockets")
+    pru_ai.add_relation("Rockets", 1.0, "Space")
+    pru_ai.infer_new_relations()
+
+    # Run the simulation (shorter run for prototype purposes)
+    print("Running PRU Cosmological Simulation...")
+    pru_sim = PRU_Simulation(num_particles=100000, time_steps=100, delta_t=0.01)
+    pru_sim.run_simulation()
+    plt.figure(figsize=(10, 5))
+    plt.plot(range(pru_sim.TIME_STEPS), pru_sim.temperature_history, label="Avg Temperature", color="red")
+    plt.plot(range(pru_sim.TIME_STEPS), pru_sim.min_temperature_history, label="Min Temperature", color="blue", linestyle="--")
+    plt.plot(range(pru_sim.TIME_STEPS), pru_sim.max_temperature_history, label="Max Temperature", color="green", linestyle="--")
+    plt.xlabel("Time Steps")
+    plt.ylabel("Temperature (K)")
+    plt.title("PRU Cosmological Simulation: Temperature Evolution")
+    plt.legend()
+    plt.show()
+
+    # Create PRU agents from a subset of simulation particles
+    agent_names = [f"Agent_{i}" for i in range(len(pru_sim.agent_indices))]
+    agents = []
+    for idx, name in zip(pru_sim.agent_indices, agent_names):
+        agent = PRU_Agent(agent_id=name, particle_index=idx, name=name, simulation=pru_sim, knowledge_system=pru_ai)
+        agents.append(agent)
+
+    # Start the dialogue manager with access to the simulation and agent information
+    dialogue_manager = DialogueManager(pru_ai, pru_sim, agents)
+    dialogue_manager.run()
