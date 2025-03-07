@@ -8,20 +8,18 @@ from bs4 import BeautifulSoup
 import spacy
 from numba import njit, prange
 
-# ================================
-# 🔥 PRU-AI: Scalable, NLP-Integrated, Relational Knowledge System
-# ================================
+########################################
+# 1. Global Relational Knowledge System #
+########################################
 
 class PRU_AI:
     def __init__(self, max_entities=1000000):
-        """Initialize PRU-AI with a scalable matrix-based knowledge graph."""
+        """Initialize the PRU-AI knowledge graph."""
         self.max_entities = max_entities
         self.entity_index = {}
         self.index_entity = {}
         self.next_index = 0
         self.relation_matrix = lil_matrix((max_entities, max_entities), dtype=np.float64)
-
-        # Load NLP Model (spaCy); auto-download if missing.
         try:
             self.nlp = spacy.load("en_core_web_sm")
         except OSError:
@@ -30,7 +28,6 @@ class PRU_AI:
             self.nlp = spacy.load("en_core_web_sm")
 
     def add_entity(self, entity):
-        """Adds a new entity if it doesn't exist."""
         if entity not in self.entity_index:
             if self.next_index >= self.max_entities:
                 raise ValueError("Max entity limit reached!")
@@ -39,7 +36,6 @@ class PRU_AI:
             self.next_index += 1
 
     def add_relation(self, entity1, relation_strength, entity2):
-        """Adds a weighted relation between two entities."""
         self.add_entity(entity1)
         self.add_entity(entity2)
         i, j = self.entity_index[entity1], self.entity_index[entity2]
@@ -47,14 +43,9 @@ class PRU_AI:
         self.relation_matrix[j, i] = relation_strength
 
     def infer_new_relations(self):
-        """
-        Dynamically generates new knowledge by finding hidden patterns using
-        sparse matrix multiplication to infer neighbors-of-neighbors.
-        """
         csr = self.relation_matrix.tocsr()
         inferred_matrix = csr * csr
         inferred_matrix = inferred_matrix.tocoo()
-
         new_relations = []
         for i, j, value in zip(inferred_matrix.row, inferred_matrix.col, inferred_matrix.data):
             if i != j and self.relation_matrix[i, j] == 0:
@@ -65,7 +56,6 @@ class PRU_AI:
         return new_relations
 
     def query_knowledge(self, entity):
-        """Returns all relations for a given entity."""
         if entity in self.entity_index:
             i = self.entity_index[entity]
             related_indices = np.nonzero(self.relation_matrix[i, :])[1]
@@ -73,20 +63,14 @@ class PRU_AI:
         return []
 
     def fetch_wikipedia_summary(self, topic):
-        """
-        Fetches Wikipedia summary and extracts relational knowledge.
-        Uses dependency parsing and NER while filtering stop words.
-        """
         url = f"https://en.wikipedia.org/wiki/{topic.replace(' ', '_')}"
         headers = {"User-Agent": "Mozilla/5.0"}
         response = requests.get(url, headers=headers)
         if response.status_code != 200:
             return "Wikipedia page not found."
-
         soup = BeautifulSoup(response.text, "html.parser")
         paragraphs = soup.find_all("p")
         text = " ".join([p.get_text() for p in paragraphs[:3]])
-
         doc = self.nlp(text)
         for token in doc:
             if token.is_stop or not token.text.strip():
@@ -99,11 +83,9 @@ class PRU_AI:
         for i in range(len(entities)):
             for j in range(i + 1, len(entities)):
                 self.add_relation(entities[i].text, 0.7, entities[j].text)
-
         return f"Extracted relational knowledge from Wikipedia: {topic}"
 
     def print_matrix(self):
-        """Prints the relational matrix for active entities."""
         active_size = self.next_index
         df = pd.DataFrame(
             self.relation_matrix[:active_size, :active_size].toarray(),
@@ -112,10 +94,22 @@ class PRU_AI:
         )
         print(df)
 
+########################################
+# 2. Planet & Simulation Classes         #
+########################################
 
-# ================================
-# PRU Simulation: Precomputed Cosmological & Quantum-Relational Updates
-# ================================
+class Planet:
+    def __init__(self, name, center, radius, temperature, gravity, atmosphere, energy_level):
+        self.name = name
+        self.center = np.array(center)
+        self.radius = radius
+        self.temperature = temperature
+        self.gravity = gravity
+        self.atmosphere = atmosphere
+        self.energy_level = energy_level
+
+    def contains(self, position):
+        return np.linalg.norm(position - self.center) <= self.radius
 
 class PRU_Simulation:
     def __init__(self, num_particles=100000, time_steps=1200, delta_t=0.01):
@@ -123,7 +117,7 @@ class PRU_Simulation:
         self.TIME_STEPS = time_steps
         self.DELTA_T = delta_t
 
-        # Physical Constants
+        # Physical constants
         self.G = 6.67430e-11
         self.K_E = 8.9875517873681764e9
         self.C_LIGHT = 3e8
@@ -137,7 +131,12 @@ class PRU_Simulation:
                        "Molecule": 5.0e-26, "Star": 1.989e30, "Dark Matter": 1e-25}
 
         self.setup_particles()
-        # For agent simulation: randomly designate a small number of particles as agents.
+        # Create a few planets in the simulation
+        self.planets = [
+            Planet("Terra", center=[0, 0], radius=1e5, temperature=300, gravity=9.8, atmosphere="Nitrogen-Oxygen", energy_level=1.0),
+            Planet("Ares", center=[2e5, 2e5], radius=8e4, temperature=250, gravity=3.7, atmosphere="Thin CO2", energy_level=0.8)
+        ]
+        # For agents, designate a small subset of particles (we will later assign them a home planet)
         num_agents = 10
         self.agent_indices = np.random.choice(np.arange(self.NUM_PARTICLES_COSMO), num_agents, replace=False)
 
@@ -179,6 +178,12 @@ class PRU_Simulation:
                 np.random.rand(),
                 np.random.randint(0, 10)
             )
+
+    def get_planet_for_position(self, position):
+        for planet in self.planets:
+            if planet.contains(position):
+                return planet.name
+        return "Deep Space"
 
     def run_simulation(self):
         for step in range(self.TIME_STEPS):
@@ -224,7 +229,6 @@ class PRU_Simulation:
         }
 
     def get_summary(self):
-        """Returns a summary of the simulation's final state."""
         if not self.results:
             return "Simulation has not been run yet."
         summary = f"Simulation Summary:\nTime Steps: {self.results['time_steps']}\n"
@@ -234,10 +238,9 @@ class PRU_Simulation:
         summary += f"Final Avg Quantum State: {self.results['avg_quantum_state'][-1]:.4f}\n"
         return summary
 
-
-# ================================
-# Simulation Helper Functions (Modified to Accept Parameters)
-# ================================
+########################################
+# 3. Helper Functions for Simulation   #
+########################################
 
 def compute_forces_kdtree(particles, G, K_E, C_LIGHT):
     num_p = len(particles)
@@ -310,57 +313,131 @@ def update_quantum_states(particles):
         avg_state = particles['quantum_state'][indices].mean()
         particles['quantum_state'][indices] = avg_state
 
-
-# ================================
-# PRU Agent: An Intelligent Entity Living in the Simulation
-# ================================
+########################################
+# 4. PRU-AI Agent with Self-Awareness    #
+########################################
 
 class PRU_Agent:
     def __init__(self, agent_id, particle_index, name, simulation, knowledge_system):
         self.agent_id = agent_id
-        self.particle_index = particle_index  # Index into the simulation particles
+        self.particle_index = particle_index  # Index into simulation particles
         self.name = name
         self.simulation = simulation
         self.knowledge_system = knowledge_system
-        self.interactions = []  # Log of interactions
-
-        # Add self to the knowledge graph
+        self.memory = []  # List to store past experiences
+        # Emotional state (values between 0 and 1)
+        self.emotional_state = {
+            "curiosity": 0.5,
+            "fear": 0.0,
+            "confidence": 0.5,
+            "trust": 0.5
+        }
+        # Determine home planet based on initial position
+        pos = self.get_position()
+        self.home_planet = simulation.get_planet_for_position(pos)
+        # Log initial self-awareness into the knowledge graph
         self.knowledge_system.add_relation(self.name, 1.0, "Agent")
 
     def get_position(self):
         return self.simulation.particles[self.particle_index]['position']
 
-    def sense_environment(self, radius=1e4):
-        """Sense local simulation data (e.g., average temperature) around the agent."""
+    def sense_environment(self, vision_radius=1e4):
+        """
+        Simulate sensory perception:
+          - Vision: Build a "depth map" of nearby agents and objects.
+          - Hearing: Simulate sound intensity from nearby events.
+          - Touch: Sense local force magnitude (approximate by local temperature gradients).
+          - Energy: Sense local temperature as a proxy for energy fields.
+        """
         pos = self.get_position()
-        positions = self.simulation.particles['position']
-        tree = cKDTree(positions)
-        neighbors = tree.query_ball_point(pos, radius)
-        temps = self.simulation.particles['temperature'][neighbors]
-        avg_temp = temps.mean() if len(temps) > 0 else None
-        return avg_temp, len(neighbors)
+        # Vision: find nearby agents (using agent positions)
+        agent_positions = np.array([agent.get_position() for agent in self.simulation.agent_indices])
+        tree = cKDTree(agent_positions)
+        vision_indices = tree.query_ball_point(pos, vision_radius)
+        vision_objects = []
+        for idx in vision_indices:
+            # Here we simply return a tuple (agent name, distance)
+            # In a full system, classification of object types would be added.
+            distance = np.linalg.norm(pos - agent_positions[idx])
+            vision_objects.append((f"Agent_{idx}", distance))
+        # Hearing: For prototype, simulate with a random value modulated by distance to a random event.
+        hearing_intensity = np.random.uniform(0, 1)
+        # Touch: Use local temperature difference (difference from simulation average)
+        local_temp = self.simulation.particles[self.particle_index]['temperature']
+        avg_temp = np.mean(self.simulation.particles['temperature'])
+        touch_sensation = abs(local_temp - avg_temp) / (avg_temp + 1e-3)
+        # Energy sensation: simply the local temperature.
+        energy = local_temp
+        return {
+            "vision": vision_objects,
+            "hearing": hearing_intensity,
+            "touch": touch_sensation,
+            "energy": energy
+        }
+
+    def update_emotional_state(self, sensory_data):
+        """
+        Update emotions based on sensory input.
+        For example, high touch (i.e. sudden temperature change) may increase fear;
+        Many nearby agents may increase trust (or curiosity).
+        """
+        num_objects = len(sensory_data["vision"])
+        energy = sensory_data["energy"]
+        # Simple heuristics:
+        self.emotional_state["curiosity"] = min(1.0, num_objects / 5.0)
+        self.emotional_state["fear"] = 1.0 if energy > 4000 else 0.2
+        self.emotional_state["confidence"] = 1.0 - self.emotional_state["fear"]
+        self.emotional_state["trust"] = 0.5 + 0.1 * num_objects
+
+    def add_memory(self, event):
+        """Store a memory (string event) along with a timestamp (simulation step)."""
+        self.memory.append(event)
+        # Also add the memory as relational knowledge
+        self.knowledge_system.add_relation(self.name, 0.8, event)
+
+    def decide(self):
+        """
+        Make a decision based on sensory data and memory.
+        For example, if local temperature is too high, decide to migrate.
+        """
+        sensory = self.sense_environment()
+        self.update_emotional_state(sensory)
+        # Log sensory data into memory
+        event = f"Sensed energy {sensory['energy']:.1f} K, vision objects: {len(sensory['vision'])}"
+        self.add_memory(event)
+        # Decision rule: if local temperature > threshold, decide to migrate.
+        if sensory["energy"] > 3500:
+            return "migrate"
+        return "stay"
+
+    def migrate(self):
+        """
+        Change home planet based on simulation's planet conditions.
+        For prototype, choose the planet with the lowest temperature.
+        """
+        planet_temps = {planet.name: planet.temperature for planet in self.simulation.planets}
+        best_planet = min(planet_temps, key=planet_temps.get)
+        old_planet = self.home_planet
+        self.home_planet = best_planet
+        self.add_memory(f"Migrated from {old_planet} to {best_planet}")
+        return f"{self.name} migrated from {old_planet} to {best_planet}"
 
     def interact_with(self, other_agent):
-        """Simulate an interaction with another agent and update the knowledge graph."""
         interaction_str = f"{self.name} communicated with {other_agent.name}"
-        self.interactions.append(interaction_str)
+        self.add_memory(interaction_str)
         self.knowledge_system.add_relation(self.name, 1.0, other_agent.name)
         return interaction_str
 
     def report(self):
-        """Return a report of the agent's interactions and sensed data."""
-        avg_temp, neighbor_count = self.sense_environment()
-        report_str = f"Agent {self.name} at particle {self.particle_index}: sensed avg temp {avg_temp:.2f} K with {neighbor_count} nearby particles. "
-        if self.interactions:
-            report_str += "Interactions: " + "; ".join(self.interactions)
-        else:
-            report_str += "No interactions recorded."
+        sensory = self.sense_environment()
+        report_str = f"Agent {self.name} at particle {self.particle_index} on {self.home_planet}: "
+        report_str += f"sensed energy {sensory['energy']:.1f} K, {len(sensory['vision'])} vision objects. "
+        report_str += f"Emotions: {self.emotional_state}. Memories: {self.memory[-2:] if self.memory else 'None'}"
         return report_str
 
-
-# ================================
-# Dialogue Manager: NLU, Dialogue Handling & NLG (with Simulation & Agent Queries)
-# ================================
+########################################
+# 5. Advanced Dialogue Manager           #
+########################################
 
 class DialogueManager:
     def __init__(self, pru_ai, simulation, agents):
@@ -372,20 +449,23 @@ class DialogueManager:
 
     def interpret_input(self, user_input):
         text_lower = user_input.lower()
-
-        # Intent: Query simulation status
+        # Query simulation status
         if any(word in text_lower for word in ["simulation", "cosmos", "universe"]):
             return {"intent": "query_simulation"}
-
-        # Intent: Query agent report
-        if "agent report" in text_lower or "agents report" in text_lower:
+        # Query agent reports or status
+        if any(word in text_lower for word in ["agent report", "agent status", "how are you"]):
             return {"intent": "agent_report"}
-
-        # Intent: Trigger agent interactions (e.g., "agents interact", "simulate agent communication")
+        # Trigger agent interactions
         if any(phrase in text_lower for phrase in ["agents interact", "agent interaction", "communicate agents"]):
             return {"intent": "agent_interaction"}
-
-        # Intent: Update/learn new knowledge
+        # Command agent migration
+        if any(phrase in text_lower for phrase in ["migrate", "move to", "relocate"]):
+            # Optionally, allow specifying an agent name
+            return {"intent": "agent_migrate"}
+        # Query agent memory
+        if "memory" in text_lower:
+            return {"intent": "agent_memory"}
+        # Update/learn new knowledge
         if any(phrase in text_lower for phrase in ["learn that", "update knowledge", "add info"]):
             content = user_input.lower().replace("learn that", "").replace("update knowledge", "").replace("add info", "").strip()
             doc_content = self.nlp(content)
@@ -403,9 +483,8 @@ class DialogueManager:
                     relation = "related to"
                     return {"intent": "update_info", "subject": subject, "object": object_, "relation": relation, "weight": 1.0}
                 else:
-                    return {"intent": "unknown", "message": "I couldn't extract entities to update. Please use a format like 'learn that [subject] is related to [object]'."}
-
-        # Intent: Fetch information
+                    return {"intent": "unknown", "message": "I couldn't extract entities to update. Use 'learn that [subject] is related to [object]'."}
+        # Fetch information
         if any(phrase in text_lower for phrase in ["tell me about", "what is", "who is", "explain", "define"]):
             doc = self.nlp(user_input)
             if doc.ents:
@@ -414,8 +493,7 @@ class DialogueManager:
                 nouns = [token.text for token in doc if token.pos_ == "NOUN"]
                 topic = nouns[-1] if nouns else user_input
             return {"intent": "fetch_info", "topic": topic}
-
-        # Intent: Query relations
+        # Query relations
         if "relation" in text_lower or "related" in text_lower or "connect" in text_lower:
             doc = self.nlp(user_input)
             if doc.ents:
@@ -424,8 +502,7 @@ class DialogueManager:
                 tokens = user_input.split()
                 entity = tokens[-1]
             return {"intent": "query_relation", "entity": entity}
-
-        return {"intent": "unknown", "message": "I didn't understand that. Can you rephrase?"}
+        return {"intent": "unknown", "message": "I didn't understand that. Please rephrase."}
 
     def generate_response(self, result):
         if isinstance(result, list):
@@ -468,7 +545,6 @@ class DialogueManager:
         elif intent == "query_simulation":
             return self.simulation.get_summary()
         elif intent == "agent_interaction":
-            # For simplicity, simulate pairwise interactions among agents that are close.
             positions = np.array([agent.get_position() for agent in self.agents])
             tree = cKDTree(positions)
             interactions = []
@@ -485,11 +561,25 @@ class DialogueManager:
         elif intent == "agent_report":
             reports = [agent.report() for agent in self.agents]
             return "Agent Reports:\n" + "\n".join(reports)
+        elif intent == "agent_migrate":
+            # Each agent decides whether to migrate.
+            migration_results = []
+            for agent in self.agents:
+                decision = agent.decide()
+                if decision == "migrate":
+                    migration_results.append(agent.migrate())
+                else:
+                    migration_results.append(f"{agent.name} decided to stay on {agent.home_planet}.")
+            return "\n".join(migration_results)
+        elif intent == "agent_memory":
+            # List memory for each agent.
+            mem_reports = [f"{agent.name}: {agent.memory[-3:] if len(agent.memory) >= 3 else agent.memory}" for agent in self.agents]
+            return "Agent Memories:\n" + "\n".join(mem_reports)
         else:
             return interpretation.get("message", "I didn't understand that.")
 
     def run(self):
-        print("Welcome to the Unified PRU Conversational System!")
+        print("Welcome to the Advanced PRU-AI Conversational System!")
         print("Type 'exit' to quit.")
         while True:
             user_input = input("You: ")
@@ -499,13 +589,12 @@ class DialogueManager:
             response = self.handle_input(user_input)
             print("PRU-AI: " + response)
 
-
-# ================================
-# Main: Merge PRU_AI, PRU Simulation & Agents
-# ================================
+########################################
+# 6. Main: Integrate Everything         #
+########################################
 
 if __name__ == "__main__":
-    # Initialize the knowledge system
+    # Initialize PRU-AI (knowledge graph)
     pru_ai = PRU_AI(max_entities=100000)
     pru_ai.add_relation("Humans", 1.0, "Technology")
     pru_ai.add_relation("Technology", 1.0, "Machines")
@@ -513,7 +602,7 @@ if __name__ == "__main__":
     pru_ai.add_relation("Rockets", 1.0, "Space")
     pru_ai.infer_new_relations()
 
-    # Run the simulation (shorter run for prototype purposes)
+    # Run the simulation (short run for demonstration)
     print("Running PRU Cosmological Simulation...")
     pru_sim = PRU_Simulation(num_particles=100000, time_steps=100, delta_t=0.01)
     pru_sim.run_simulation()
@@ -527,13 +616,13 @@ if __name__ == "__main__":
     plt.legend()
     plt.show()
 
-    # Create PRU agents from a subset of simulation particles
+    # Create PRU agents from designated simulation particles
     agent_names = [f"Agent_{i}" for i in range(len(pru_sim.agent_indices))]
     agents = []
     for idx, name in zip(pru_sim.agent_indices, agent_names):
         agent = PRU_Agent(agent_id=name, particle_index=idx, name=name, simulation=pru_sim, knowledge_system=pru_ai)
         agents.append(agent)
 
-    # Start the dialogue manager with access to the simulation and agent information
+    # Start dialogue manager with access to simulation and agent information
     dialogue_manager = DialogueManager(pru_ai, pru_sim, agents)
     dialogue_manager.run()
