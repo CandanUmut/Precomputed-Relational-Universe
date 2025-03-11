@@ -1,0 +1,28 @@
+import numpy as np
+
+# Known constants
+c = 2.99792458e8      # Speed of light (m/s)
+h = 6.62607015e-34    # Planck's constant (J·s)
+Lambda = 1.0e-52      # Cosmological constant (m^-2)
+alpha = 1/137.0       # Fine-structure constant (dimensionless)
+N = 1.66e79           # Estimated number of particles in the universe
+
+# Compute derived G
+sqrt_N = np.sqrt(N)
+G_derived = (c * h) / (Lambda * alpha * sqrt_N)
+
+# Known G
+G_standard = 6.67430e-11  # m^3 kg^-1 s^-2
+
+# Compute derived c
+c_derived = (h / (Lambda * alpha * sqrt_N)) ** (1/3)
+
+# Print results
+print("Derived G =", G_derived, "m^3 kg^-1 s^-2")
+print("Standard G =", G_standard, "m^3 kg^-1 s^-2")
+print("\nDerived c =", c_derived, "m/s")
+print("Standard c =", c, "m/s")
+
+# Differences
+print("\nDifference in G:", abs(G_derived - G_standard))
+print("Difference in c:", abs(c_derived - c))
