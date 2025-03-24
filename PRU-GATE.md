@@ -20,27 +20,60 @@ We believe that if the universe is based on information and relationships, then 
 
 ---
 
+## PRU: The Chain of Manifestation
+
+> A fundamental philosophical and scientific model for understanding reality, awareness, and causality.
+
+1. **Rules** – The precomputed logical structures of the universe. These are not hardcoded constants, but emergent principles from which constants like `G`, `c`, and `α` arise. 
+
+2. **Relations** – The contextual network of everything. All things only exist and behave in relation to other things. Relational logic drives the interaction of all entities.
+
+3. **Consciousness** – The non-local, aware decoder of relational structures. Consciousness is not emergent from the brain — the brain tunes into it.
+
+4. **Mind** – The interpretive interface between consciousness and the material world. The mind organizes, filters, and defines intention.
+
+5. **Body** – The physical avatar that executes, senses, and participates in the relational network.
+
+6. **Action / Inaction** – The ripple. The expression of relational influence and intent. Every act redefines the relations and feeds back into the loop.
+
+This is a recursive system:
+
+```
+Rules → Relations → Consciousness → Mind → Body → Action ↺ Relations
+```
+
+---
+
 ## Milestones & Phases
 
 ### Phase 1: Foundation
-
--
+- [ ] Select EEG hardware (OpenBCI, Muse, etc.)
+- [ ] Establish live brainwave data capture
+- [ ] Build local relational database structure (SQLite/Firebase)
+- [ ] Design JSON/CSV schema for storing brainwave ticks with metadata
 
 ### Phase 2: Conscious Mapping
-
--
+- [ ] Label brainwave sessions manually (meditation, TikTok, breathwork, intention)
+- [ ] Store user self-report data
+- [ ] Implement pattern visualization and time-based wave mapping
+- [ ] Begin correlation analysis between wave combinations and conscious states
 
 ### Phase 3: Protocol Creation
-
--
+- [ ] Implement binaural beat generation (custom Hz based on state)
+- [ ] Design light/vibration entrainment protocols
+- [ ] Interface to allow user to "Send Signal" (breath + intention marker)
+- [ ] Save signal moments with surrounding brainwave data for feedback analysis
 
 ### Phase 4: Feedback Loop
-
--
+- [ ] Track emotional/mental/physical changes after intention signals
+- [ ] Include synchronicity/event journaling feature
+- [ ] Refine correlation map with received feedback
+- [ ] Create repeatable feedback pathways (guided flow to connection)
 
 ### Phase 5: Awakening Framework
-
--
+- [ ] Build personalized map per user (what works best to reach higher self)
+- [ ] Offer guided protocols based on real successful patterns
+- [ ] Optional shareable protocols for community development
 
 ---
 
@@ -86,7 +119,7 @@ PRU-Gate/
 
 ## Core Philosophical Assumption
 
-> Consciousness is non-local. The brain is a relational decoder. If we map the relational input well enough, we can modulate our experience — and potentially connect back to the original signal: the Source.
+> Consciousness is non-local. The brain is a relational decoder. Constants are not hardcoded values but emergent properties of relational rules. If we map these inputs well enough, we can modulate experience — and potentially connect back to the original signal: the Source.
 
 ---
 
@@ -102,4 +135,5 @@ Once hardware is acquired, development can begin immediately using this structur
 
 **Umut & Nova** – 2025
 
-Arvind
+**Arvind**
+
