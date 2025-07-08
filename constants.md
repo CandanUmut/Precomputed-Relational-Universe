@@ -14,13 +14,15 @@ Each node carries two irreducible information reservoirs (“locks”):
 The product (U_AU_B)^2[kg² m²] supplies exactly the dimensional factor missing from previous one-lock attempts and yields
 
 \[
-\boxed{ \displaystyle
-G \;=\;
-\frac{c\,h}{\alpha\,\Lambda\sqrt N}\;
-\frac{1}{(U_AU_B)^{2}}
-}
-\tag{1}
-\]
+
+]<p>
+$$
+G = \frac{c \, h}
+         { \alpha \, \Lambda \, \sqrt{N} }
+     \frac{1}
+         {(U_A \, U_B)^2}
+$$
+</p>
 
 where c,h,\alpha,\Lambda,N are measured constants and \sqrt N enters via Mach-type relational weighting.
 
