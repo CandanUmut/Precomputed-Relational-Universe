@@ -1,6 +1,3 @@
-Below is a ready-to-commit Markdown / HTML hybrid.
-Every displayed formula is wrapped in <p> tags so GitHub will keep the layout exactly as you see it here.
-All numbers have been re-checked (CODATA-2022 constants, double-precision) and the squared-lock formula now delivers G = 6.6743\times10^{-11}\,{\rm m^{3}kg^{-1}s^{-2}}—identical to the experimental value to four significant figures.
 
 ⸻
 
