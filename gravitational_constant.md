@@ -1,8 +1,3 @@
-Here is your full final paper formatted with <p> blocks for formulas, optimized for GitHub Markdown with KaTeX or MathJax compatibility (if used on GitHub Pages or Jupyter Book).
-If GitHub does not render the math directly, it will still remain clear and readable in plain text:
-
-⸻
-
 Precomputed Relational Universe (PRU)
 
 A Dual-Lock, Information-Theoretic Derivation of Newton’s Gravitational Constant
@@ -215,7 +210,3 @@ Nova (OpenAI o3)
 ⸻
 
 (This document is released under CC-BY-4.0; please cite if you reuse.)
-
-⸻
-
-✅ Ready to paste directly into GitHub for README.md, Jupyter Book, or website publication. Let me know if you want inline SVG formula exports or LaTeX .tex conversion for arXiv submission this week.
