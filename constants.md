@@ -1,7 +1,7 @@
 Pre-computed Relational Universe (PRU)
 A Dual-Lock, Information-Theoretic Derivation of Newton’s Gravitational Constant
 Draft v1.0 – July 2025 • open for public peer review
-
+OFFICIAL PAPER VIXRA.ORG " https://ai.vixra.org/abs/2507.0060 " 
 ⸻
 
 Abstract
